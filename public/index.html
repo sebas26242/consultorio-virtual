@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Consultorio Médico de Triaje</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para íconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Analytics -->
+    <!-- Reemplaza 'G-XXXXXXXXXX' con tu propio ID de Medición de Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        medical: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6', // Teal principal
+                            600: '#0d9488',
+                            700: '#0f766e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Personalización del scrollbar del chat */
+        .chat-container::-webkit-scrollbar { width: 5px; }
+        .chat-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Animación del indicador de escritura */
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+            height: 6px; width: 6px;
+            background: #0d9488;
+            border-radius: 50%;
+            display: inline-block; margin: 0 2px;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            20% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.2; transform: scale(0.8); }
+        }
+        /* Efecto Glassmorphism para el header */
+        .glass-header {
+            background: linear-gradient(135deg, rgba(13, 148, 136, 0.95), rgba(15, 118, 110, 0.95));
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-[100dvh] flex flex-col items-center justify-center sm:p-6">
+    
+    <!-- Contenedor Principal (Ocupa todo en móvil, amplio y flotante en PC) -->
+    <main class="flex flex-col w-full h-full max-w-4xl bg-white sm:rounded-3xl shadow-2xl overflow-hidden relative border border-gray-200 sm:max-h-[85vh]">
+        
+        <!-- Encabezado Médico -->
+        <header class="glass-header text-white px-5 py-4 flex items-center justify-between z-10 shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-xl text-white w-12 h-12 flex items-center justify-center shadow-inner backdrop-blur-sm">
+                    <i class="fa-solid fa-stethoscope text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide">Dr. Vital</h1>
+                    <p class="text-medical-100 text-xs font-medium flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> IA Médica Activa
+                    </p>
+                </div>
+            </div>
+            <button class="text-white/80 hover:text-white transition">
+                <i class="fa-solid fa-ellipsis-vertical text-xl"></i>
+            </button>
+        </header>
+
+        <!-- Área de Chat -->
+        <div id="chat-messages" class="chat-container flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50/50 pb-28">
+            <!-- Mensajes dinámicos -->
+        </div>
+
+        <!-- Indicador de escritura Flotante -->
+        <div id="typing-indicator" class="hidden absolute bottom-20 left-4 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-full px-4 py-2 shadow-lg flex items-center gap-2 text-xs font-medium text-gray-500 z-10 transition-all">
+            Dr. Vital está analizando <div class="typing-indicator flex items-center mt-0.5"><span></span><span></span><span></span></div>
+        </div>
+
+        <!-- Área de Entrada de Texto -->
+        <div class="bg-white border-t border-gray-100 px-4 py-3 absolute bottom-0 w-full shadow-[0_-4px_15px_-5px_rgba(0,0,0,0.05)]">
+            <form id="chat-form" class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-100 rounded-full flex items-center px-4 py-1 border border-transparent focus-within:border-medical-500 focus-within:bg-white transition-all shadow-inner">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        class="w-full bg-transparent py-2.5 text-sm focus:outline-none text-gray-700 placeholder-gray-400"
+                        placeholder="Escribe tus síntomas..."
+                        autocomplete="off"
+                        required
+                    >
+                </div>
+                <button 
+                    type="submit" 
+                    id="send-btn"
+                    class="bg-medical-600 hover:bg-medical-700 active:scale-95 text-white rounded-full h-11 w-11 flex items-center justify-center transition-all shadow-md shrink-0"
+                >
+                    <i class="fa-solid fa-paper-plane ml-[-2px]"></i>
+                </button>
+            </form>
+            <p class="text-center text-[9px] text-gray-400 mt-2 font-medium">
+                Tus datos son privados. Para emergencias, llama al 911.
+            </p>
+        </div>
+    </main>
+
+    <script>
+        let chatHistory = [];
+
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const sendBtn = document.getElementById('send-btn');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const initialMessage = "¡Hola! Soy el **Dr. Vital**. Estoy aquí para orientarte sobre tu salud. ¿Cuáles son los síntomas que te molestan hoy?";
+            chatHistory.push({ role: "model", content: initialMessage });
+            renderMessage(initialMessage, 'model');
+        });
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            
+            chatHistory.push({ role: "user", content: message });
+            renderMessage(message, 'user');
+
+            typingIndicator.classList.remove('hidden');
+            scrollToBottom();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ history: chatHistory })
+                });
+
+                if (!response.ok) throw new Error("Error del servidor");
+
+                const data = await response.json();
+                const modelReply = data.response;
+
+                chatHistory.push({ role: "model", content: modelReply });
+                renderMessage(modelReply, 'model');
+
+            } catch (error) {
+                renderMessage("Error de conexión. Intenta nuevamente.", 'error');
+                chatHistory.pop(); 
+            } finally {
+                typingIndicator.classList.add('hidden');
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+                scrollToBottom();
+            }
+        });
+
+        function renderMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex w-full ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`;
+
+            const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>').replace(/\n/g, '<br>');
+
+            if (sender === 'user') {
+                msgDiv.innerHTML = `
+                    <div class="bg-medical-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-[85%] shadow-md text-[15px] leading-relaxed">
+                        ${formattedText}
+                    </div>
+                `;
+            } else if (sender === 'model') {
+                msgDiv.innerHTML = `
+                    <div class="flex items-end gap-2 max-w-[90%]">
+                        <div class="bg-medical-50 text-medical-600 rounded-full h-8 w-8 flex items-center justify-center shrink-0 mb-1 border border-medical-200 shadow-sm">
+                            <i class="fa-solid fa-stethoscope text-xs"></i>
+                        </div>
+                        <div class="bg-white border border-gray-100 text-gray-700 rounded-2xl rounded-tl-sm px-4 py-3 shadow-md text-[15px] leading-relaxed">
+                            ${formattedText}
+                        </div>
+                    </div>
+                `;
+            } else if (sender === 'error') {
+                msgDiv.innerHTML = `
+                    <div class="bg-red-50 text-red-600 border border-red-200 rounded-xl px-4 py-2 max-w-[85%] text-sm mx-auto text-center shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i> ${text}
+                    </div>
+                `;
+            }
+
+            chatMessages.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</body>
+</html>

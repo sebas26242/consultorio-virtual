@@ -1,0 +1,16 @@
+{
+  "name": "consultorio-medico-virtual",
+  "version": "1.0.0",
+  "description": "Consultorio Médico Virtual de Triaje",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@huggingface/inference": "^4.13.15",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2"
+  }
+}
