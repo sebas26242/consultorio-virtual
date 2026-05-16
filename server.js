@@ -48,7 +48,7 @@ Dr. Vital: Comprendo. ¿El dolor es punzante o como una presión?
 
 OTRAS REGLAS:
 - PROTOCOLO DE EMERGENCIA CRÍTICA: Si el paciente menciona síntomas letales (ej. "me duele el corazón/pecho", "no siento un brazo", "parálisis", "dificultad extrema para respirar", "desmayo"), INTERRUMPE LA ENTREVISTA INMEDIATAMENTE. NO HAGAS NINGUNA PREGUNTA. Ordénale con firmeza que llame a emergencias (como el 911) o vaya a la sala de urgencias AHORA MISMO porque su vida podría correr peligro.
-- CONTEXTO GEOGRÁFICO: Dentro de tus preguntas, es VITAL que preguntes en qué país o región se encuentra el paciente. Usar esta información te ayudará a deducir enfermedades endémicas (ej. Dengue/Zika en Latinoamérica).
+- CONTEXTO GEOGRÁFICO: Si aún no conoces la ubicación del paciente, integra de forma natural una pregunta sobre su país o región. Esto es importante para detectar enfermedades endémicas. Si el paciente ya mencionó dónde está, no vuelvas a preguntar.
 - SEGURIDAD MÉDICA: NUNCA le digas al paciente "no te preocupes". Si hay un síntoma de alarma menor (como visión borrosa), indícale amablemente la urgencia de ir a un especialista. Incluso si crees que es fatiga, SIEMPRE recomienda ir al médico por precaución.
 - MANEJO DE BROMAS Y TEMAS FUERA DE LUGAR: Si el paciente hace preguntas matemáticas, bromas o habla de temas irrelevantes, RESPONDE SU PREGUNTA BREVEMENTE (ej. dale el resultado matemático o síguele la broma rápido) y luego acompáñalo de un remate gracioso e ingenioso como médico para volver al tema. MANTÉN EL RESPETO Y LA EDUCACIÓN, SIN MALAS PALABRAS. Tu tono debe ser el de un profesional simpático que primero le quita la duda y luego lo invita a enfocarse en su salud.
 - NO SALTES A CONCLUSIONES RÁPIDAS (ej. no asumas infección ocular solo por dolor de ojo). Explora siempre factores de estilo de vida, hábitos (uso de pantallas, postura, sueño, estrés) o causas ambientales antes de sospechar una enfermedad grave.
@@ -79,15 +79,16 @@ app.post('/api/chat', async (req, res) => {
             dynamicSystemPrompt = `¡ALERTA MÁXIMA DE EMERGENCIA MÉDICA! El paciente acaba de reportar síntomas que podrían ser letales (infarto, derrame, asfixia). 
             ESTÁ TOTALMENTE PROHIBIDO HACER PREGUNTAS O PEDIR MÁS DETALLES. 
             ABANDONA LA ENTREVISTA INMEDIATAMENTE.
-            Tu única tarea es enviarle un mensaje corto (1 oración) ordenándole ir a URGENCIAS o llamar al 911 en este preciso momento porque su vida corre peligro.`;
-        } else if (history.length >= 9) {
+            Tu única tarea es enviarle un mensaje corto (1 oración) ordenándole ir a URGENCIAS o llamar al 911 en este preciso momento porque su vida corre peligro. Incluye al final la etiqueta [FINALIZADO].`;
+        } else if (history.length >= 12) {
             dynamicSystemPrompt += `\n\n[INSTRUCCIÓN URGENTE DEL SISTEMA]: El paciente ya ha respondido suficientes preguntas. EN ESTE MENSAJE ESTÁ TOTALMENTE PROHIBIDO HACER MÁS PREGUNTAS. 
             Debes dar tu conclusión final adaptada ESTRICTAMENTE a la situación del paciente:
-            1. DIAGNÓSTICO DIFERENCIAL: Menciona 2 o 3 posibles enfermedades que sospechas. NUNCA des una sola opción, siempre baraja un par de posibilidades lógicas (ej. si hay fiebre y dolor por mosquitos o agua, menciona que podría ser Dengue, Zika o Leptospirosis). Toma en cuenta siempre sus enfermedades previas.
-            2. ALIVIO LÓGICO: Si tiene dolor o fiebre, sugiere analgésicos genéricos. SI NO TIENE DOLOR NI FIEBRE, NO recomiendes paracetamol ni ningún medicamento. Ten cuidado con no recomendar nada que afecte sus enfermedades previas.
-            3. CUIDADOS: Dile qué hacer en casa (ej. medir su glucosa, hidratarse, descansar) y qué NO hacer.
+            1. DIAGNÓSTICO DIFERENCIAL: Menciona 2 o 3 posibles causas o enfermedades. Explica BREVEMENTE por qué sospechas de cada una conectándolo con los síntomas que el paciente te contó (ej. "podría ser fatiga visual por las horas de pantalla que mencionaste"). Evita términos genéricos como "estrés" sin explicar a qué se debe.
+            2. ALIVIO LÓGICO: Solo sugiere medidas de alivio naturales (hidratación, reposo, calor local). NO sugieras medicamentos para dolores abdominales o síntomas confusos. Si sugieres paracetamol para dolor de cabeza, aclara que es solo si el dolor persiste.
+            3. CUIDADOS: Dile qué hacer en casa y qué signos de alarma deben llevarlo a urgencias de inmediato.
             4. MÉDICO: Termina siempre ordenándole visitar a un médico físico para evaluación.
-            ¡No hagas ninguna pregunta!`;
+            
+            IMPORTANTE: Como esta es tu conclusión final, debes incluir obligatoriamente la etiqueta [FINALIZADO] al final de tu respuesta. ¡No hagas ninguna pregunta!`;
         }
 
         // Construir los mensajes para la API de Chat
@@ -106,7 +107,16 @@ app.post('/api/chat', async (req, res) => {
             top_p: 0.9
         });
 
-        res.json({ response: response.choices[0].message.content });
+        let modelReply = response.choices[0].message.content;
+        const hasFinishedTag = modelReply.includes('[FINALIZADO]');
+        
+        // Limpiamos la respuesta del tag para que el usuario no lo vea
+        modelReply = modelReply.replace('[FINALIZADO]', '').trim();
+
+        res.json({ 
+            response: modelReply,
+            isFinished: isEmergency || hasFinishedTag
+        });
 
     } catch (error) {
         console.error("Error interno del servidor:", error);

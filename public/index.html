@@ -172,14 +172,23 @@
                 chatHistory.push({ role: "model", content: modelReply });
                 renderMessage(modelReply, 'model');
 
+                if (data.isFinished) {
+                    renderFeedbackButtons();
+                    // Ocultar el área de entrada al finalizar
+                    chatForm.parentElement.classList.add('opacity-0', 'pointer-events-none', 'translate-y-10');
+                    setTimeout(() => chatForm.parentElement.classList.add('hidden'), 500);
+                }
+
             } catch (error) {
                 renderMessage("Error de conexión. Intenta nuevamente.", 'error');
                 chatHistory.pop(); 
             } finally {
                 typingIndicator.classList.add('hidden');
-                userInput.disabled = false;
-                sendBtn.disabled = false;
-                userInput.focus();
+                if (!chatForm.parentElement.classList.contains('hidden')) {
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    userInput.focus();
+                }
                 scrollToBottom();
             }
         });
@@ -221,6 +230,63 @@
 
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function renderFeedbackButtons() {
+            const btnDiv = document.createElement('div');
+            btnDiv.className = "flex flex-col items-center gap-4 py-8 animate-fade-in";
+            btnDiv.innerHTML = `
+                <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xl flex flex-col items-center gap-4 max-w-sm w-full mx-auto">
+                    <div class="w-12 h-12 bg-medical-50 rounded-full flex items-center justify-center text-medical-600 mb-2">
+                        <i class="fa-solid fa-star text-xl"></i>
+                    </div>
+                    <p class="text-[15px] font-semibold text-gray-700 text-center">¿Te ha sido útil la orientación del Dr. Vital?</p>
+                    <div class="flex gap-3 w-full">
+                        <button id="btn-accept" class="flex-1 px-4 py-3 bg-medical-600 text-white rounded-2xl font-bold shadow-lg hover:bg-medical-700 hover:shadow-medical-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> Aceptar
+                        </button>
+                        <button id="btn-reject" class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 text-gray-500 rounded-2xl font-bold shadow-sm hover:bg-gray-100 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-xmark"></i> Rechazar
+                        </button>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(btnDiv);
+            scrollToBottom();
+
+            document.getElementById('btn-accept').onclick = () => sendFeedback('aceptar', btnDiv);
+            document.getElementById('btn-reject').onclick = () => sendFeedback('rechazar', btnDiv);
+        }
+
+        function sendFeedback(type, container) {
+            // Google Analytics Event
+            if (typeof gtag === 'function') {
+                gtag('event', 'consulta_feedback', {
+                    'event_category': 'feedback',
+                    'event_label': type,
+                    'value': type === 'aceptar' ? 1 : 0
+                });
+                console.log('Feedback enviado a GA:', type);
+            }
+
+            // Animación de salida y cambio a mensaje de agradecimiento
+            container.innerHTML = `
+                <div class="bg-medical-50 border border-medical-100 p-4 rounded-2xl animate-fade-in flex items-center gap-3">
+                    <div class="bg-medical-500 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-sm">
+                        <i class="fa-solid fa-heart text-xs"></i>
+                    </div>
+                    <p class="text-sm font-bold text-medical-700">
+                        ${type === 'aceptar' ? '¡Me alegra haberte ayudado! Cuídate mucho.' : 'Gracias por tu feedback, seguiremos mejorando.'}
+                    </p>
+                </div>
+            `;
+            
+            // Botón para reiniciar si lo desean (opcional, pero mejora UX)
+            const resetBtn = document.createElement('button');
+            resetBtn.className = "mt-4 text-xs font-medium text-medical-600 hover:underline";
+            resetBtn.innerText = "Nueva consulta";
+            resetBtn.onclick = () => window.location.reload();
+            container.appendChild(resetBtn);
         }
     </script>
     <style>
