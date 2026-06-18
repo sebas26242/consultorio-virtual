@@ -399,6 +399,17 @@
             window.clarity && window.clarity('set', 'chatScrollDepth', Math.round(scrollPercent * 100));
         });
 
+        // Ajustar layout cuando el teclado móvil se abre/cierra
+        if ('visualViewport' in window) {
+            window.visualViewport.addEventListener('resize', () => {
+                const main = document.querySelector('main');
+                main.style.height = `${window.visualViewport.height}px`;
+                if (window.visualViewport.height < window.innerHeight) {
+                    setTimeout(scrollToBottom, 200);
+                }
+            });
+        }
+
         function renderFeedbackButtons() {
             const btnDiv = document.createElement('div');
             btnDiv.className = "flex flex-col items-center gap-4 py-8 animate-fade-in";
