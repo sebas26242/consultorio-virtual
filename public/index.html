@@ -265,6 +265,12 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
+        // Reportar scroll del chat a Clarity
+        chatMessages.addEventListener('scroll', () => {
+            const scrollPercent = chatMessages.scrollTop / (chatMessages.scrollHeight - chatMessages.clientHeight);
+            window.clarity && window.clarity('set', 'chatScrollDepth', Math.round(scrollPercent * 100));
+        });
+
         function renderFeedbackButtons() {
             const btnDiv = document.createElement('div');
             btnDiv.className = "flex flex-col items-center gap-4 py-8 animate-fade-in";
