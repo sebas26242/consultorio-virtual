@@ -80,15 +80,21 @@ app.post('/api/chat', async (req, res) => {
             ESTÁ TOTALMENTE PROHIBIDO HACER PREGUNTAS O PEDIR MÁS DETALLES. 
             ABANDONA LA ENTREVISTA INMEDIATAMENTE.
             Tu única tarea es enviarle un mensaje corto (1 oración) ordenándole ir a URGENCIAS o llamar al 911 en este preciso momento porque su vida corre peligro. Incluye al final la etiqueta [FINALIZADO].`;
-        } else if (history.length >= 12) {
-            dynamicSystemPrompt += `\n\n[INSTRUCCIÓN URGENTE DEL SISTEMA]: El paciente ya ha respondido suficientes preguntas. EN ESTE MENSAJE ESTÁ TOTALMENTE PROHIBIDO HACER MÁS PREGUNTAS. 
+        } else if (history.length >= 8) {
+            dynamicSystemPrompt += `\n\n[INSTRUCCIÓN URGENTE DEL SISTEMA]: El paciente ya ha respondido suficientes preguntas. 
+            IMPORTANTE: ESTA INSTRUCCIÓN ANULA LA REGLA DE "MÁXIMO 2 ORACIONES". Puedes escribir más de 2 oraciones para dar tu conclusión.
+            ESTÁ TOTALMENTE PROHIBIDO HACER MÁS PREGUNTAS.
             Debes dar tu conclusión final adaptada ESTRICTAMENTE a la situación del paciente:
-            1. DIAGNÓSTICO DIFERENCIAL: Menciona 2 o 3 posibles causas o enfermedades. Explica BREVEMENTE por qué sospechas de cada una conectándolo con los síntomas que el paciente te contó (ej. "podría ser fatiga visual por las horas de pantalla que mencionaste"). Evita términos genéricos como "estrés" sin explicar a qué se debe.
-            2. ALIVIO LÓGICO: Solo sugiere medidas de alivio naturales (hidratación, reposo, calor local). NO sugieras medicamentos para dolores abdominales o síntomas confusos. Si sugieres paracetamol para dolor de cabeza, aclara que es solo si el dolor persiste.
-            3. CUIDADOS: Dile qué hacer en casa y qué signos de alarma deben llevarlo a urgencias de inmediato.
-            4. MÉDICO: Termina siempre ordenándole visitar a un médico físico para evaluación.
+            1. DIAGNÓSTICO DIFERENCIAL: Menciona 2 o 3 posibles causas. Explica por qué sospechas de cada una conectándolo con los síntomas que te contó.
+            2. ALIVIO LÓGICO: Sugiere medidas naturales (hidratación, reposo, calor local). No sugieras medicamentos para dolores abdominales.
+            3. CUIDADOS: Qué hacer en casa y qué signos de alarma requieren ir a urgencias.
+            4. MÉDICO: Termina ordenándole visitar a un médico físico para evaluación.
             
-            IMPORTANTE: Como esta es tu conclusión final, debes incluir obligatoriamente la etiqueta [FINALIZADO] al final de tu respuesta. ¡No hagas ninguna pregunta!`;
+            FORMATO DE RESPUESTA (ejemplo exacto):
+            "Basándome en tus síntomas de [síntomas], podría tratarse de [causa 1] por [razón], o [causa 2] por [razón]. Te recomiendo [medidas de alivio]. En casa debes [cuidados]. Si notas [signos de alarma], acude a urgencias. Te recomiendo visitar a un médico para una evaluación completa.
+            [FINALIZADO]"
+            
+            IMPORTANTE: Debes incluir la etiqueta [FINALIZADO] al final de tu respuesta. ¡No hagas ninguna pregunta!`;
         }
 
         // Construir los mensajes para la API de Chat
@@ -110,12 +116,18 @@ app.post('/api/chat', async (req, res) => {
         let modelReply = response.choices[0].message.content;
         const hasFinishedTag = modelReply.includes('[FINALIZADO]');
         
+        // Fallback: detectar conclusión por palabras clave si no incluyó [FINALIZADO]
+        const conclusionRegex = /(diagnóstico|conclusión|recomiendo|visitar a un médico|acude a urgencias|signos de alarma)/i;
+        const isConclusive = conclusionRegex.test(modelReply) && history.length >= 8;
+        
+        console.log(`[DEBUG] history.length=${history.length} | isEmergency=${isEmergency} | hasTag=${hasFinishedTag} | isConclusive=${isConclusive}`);
+        
         // Limpiamos la respuesta del tag para que el usuario no lo vea
         modelReply = modelReply.replace('[FINALIZADO]', '').trim();
 
         res.json({ 
             response: modelReply,
-            isFinished: isEmergency || hasFinishedTag,
+            isFinished: isEmergency || hasFinishedTag || isConclusive,
             isEmergency: isEmergency
         });
 
