@@ -19,6 +19,22 @@
       gtag('js', new Date());
 
       gtag('config', 'G-62X506T2H4', { 'debug_mode': true });
+
+      // GA4: Eventos personalizados mejorados
+      window.trackGA = function(action, params = {}) {
+        if (typeof gtag === 'function') {
+          gtag('event', action, params);
+        }
+      };
+    </script>
+
+    <!-- Microsoft Clarity - Mapas de Calor y Grabaciones de Sesiones -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "x8pwif0ev8");
     </script>
     <script>
         tailwind.config = {
@@ -90,8 +106,8 @@
             </button>
         </header>
 
-        <!-- Área de Chat -->
-        <div id="chat-messages" class="chat-container flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50/50 pb-28">
+        <!-- Área de Chat (data-clarity-mask protege contenido médico sensible en grabaciones) -->
+        <div id="chat-messages" class="chat-container flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50/50 pb-28" data-clarity-mask="true">
             <!-- Mensajes dinámicos -->
         </div>
 
@@ -111,6 +127,7 @@
                         placeholder="Escribe tus síntomas..."
                         autocomplete="off"
                         required
+                        data-clarity-mask="true"
                     >
                 </div>
                 <button 
@@ -136,10 +153,13 @@
         const typingIndicator = document.getElementById('typing-indicator');
         const sendBtn = document.getElementById('send-btn');
 
+        let sessionStarted = false;
+
         window.addEventListener('DOMContentLoaded', () => {
             const initialMessage = "¡Hola! Soy el **Dr. Vital**. Estoy aquí para orientarte sobre tu salud. ¿Cuáles son los síntomas que te molestan hoy?";
             chatHistory.push({ role: "model", content: initialMessage });
             renderMessage(initialMessage, 'model');
+            trackGA('page_view_detail', { page_title: 'Chat de Triaje', page_location: window.location.href });
         });
 
         chatForm.addEventListener('submit', async (e) => {
@@ -153,6 +173,13 @@
             
             chatHistory.push({ role: "user", content: message });
             renderMessage(message, 'user');
+
+            // GA4: Inicio de sesión y envío de mensajes
+            if (!sessionStarted) {
+                sessionStarted = true;
+                trackGA('session_start', { event_category: 'engagement', event_label: 'first_message' });
+            }
+            trackGA('message_sent', { event_category: 'chat', event_label: 'user_message', message_count: chatHistory.length });
 
             typingIndicator.classList.remove('hidden');
             scrollToBottom();
@@ -173,6 +200,12 @@
                 renderMessage(modelReply, 'model');
 
                 if (data.isFinished) {
+                    trackGA('consultation_complete', {
+                        event_category: 'conversion',
+                        event_label: 'triage_finished',
+                        message_count: chatHistory.length,
+                        was_emergency: data.isEmergency || false
+                    });
                     renderFeedbackButtons();
                     // Ocultar el área de entrada al finalizar
                     chatForm.parentElement.classList.add('opacity-0', 'pointer-events-none', 'translate-y-10');
@@ -260,14 +293,11 @@
 
         function sendFeedback(type, container) {
             // Google Analytics Event
-            if (typeof gtag === 'function') {
-                gtag('event', 'consulta_feedback', {
-                    'event_category': 'feedback',
-                    'event_label': type,
-                    'value': type === 'aceptar' ? 1 : 0
-                });
-                console.log('Feedback enviado a GA:', type);
-            }
+            trackGA('consulta_feedback', {
+                event_category: 'feedback',
+                event_label: type,
+                value: type === 'aceptar' ? 1 : 0
+            });
 
             // Animación de salida y cambio a mensaje de agradecimiento
             container.innerHTML = `
@@ -285,7 +315,10 @@
             const resetBtn = document.createElement('button');
             resetBtn.className = "mt-4 text-xs font-medium text-medical-600 hover:underline";
             resetBtn.innerText = "Nueva consulta";
-            resetBtn.onclick = () => window.location.reload();
+            resetBtn.onclick = () => {
+                trackGA('new_consultation', { event_category: 'engagement', event_label: 'restart' });
+                window.location.reload();
+            };
             container.appendChild(resetBtn);
         }
     </script>

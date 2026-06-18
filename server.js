@@ -115,7 +115,8 @@ app.post('/api/chat', async (req, res) => {
 
         res.json({ 
             response: modelReply,
-            isFinished: isEmergency || hasFinishedTag
+            isFinished: isEmergency || hasFinishedTag,
+            isEmergency: isEmergency
         });
 
     } catch (error) {
