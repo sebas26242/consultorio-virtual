@@ -102,7 +102,7 @@ app.post('/api/chat', async (req, res) => {
         const response = await hf.chatCompletion({
             model: MODEL,
             messages: messages,
-            max_tokens: 300,
+            max_tokens: 500,
             temperature: 0.3, // Temperatura baja para que obedezca las reglas estrictamente
             top_p: 0.9
         });
